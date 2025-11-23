@@ -28,11 +28,6 @@ powersAndDispowers = ["bonus_0004.png","bonus_0001.png","bonus_0002.png","bonus_
 /*-------------------------------------------
  *  1️⃣  Initialise the GIF parser
  *  ------------------------------------------------ */
-const myGif = GIF();                     // create the parser object
-console.log('🛠️  GIF object created', myGif);
-myGif.waitTillDone = false;              // fire onload after the FIRST frame
-
-myGif.onerror = e => console.error('❌ GIF load error:', e);
 
 const incoming = powersAndDispowers.map(i => {
     if (i.includes(".gif")){
@@ -46,7 +41,6 @@ const incoming = powersAndDispowers.map(i => {
     }
 });
 console.log('🛠️  array object created', incoming);
-/* ---
 
 function finishGame(){
 
@@ -76,8 +70,50 @@ function collectCoin(){
         case coins == 500:
             finishGame();
     }
-}*/
+}
 const imgs = [];
+let activeGif = GIF();          // the *single* global parser we draw from
+activeGif.waitTillDone = false; // fire onload after the first frame
+
+let loading = false;            // render loop will skip drawing while true
+let currentSprite = null;       // reference we actually draw (points to activeGif when ready)
+
+/**
+ * Switch to a new GIF (skin) identified by its URL.
+ * Returns a Promise that resolves when the first frame is ready.
+ */
+async function switchSkin(url) {
+    loading = true;                     // stop drawing until we have a fresh frame
+
+    // ---- 1️⃣ wipe the old parser completely ----
+    resetGifParser(activeGif);
+
+    // ---- 2️⃣ attach fresh callbacks ----
+    activeGif.onload = () => {
+        console.log('✅ Skin loaded →', url);
+        currentSprite = activeGif;      // now the render loop can draw it
+        loading = false;             // resume drawing
+    };
+    activeGif.onerror = err => {
+        console.error('❌ Skin load error →', url, err);
+        loading = false;                // resume with whatever sprite we had before
+    };
+
+    // ---- 3️⃣ start the XHR for the new file ----
+    activeGif.load(url);
+}
+
+async function setLevel(newLevel) {
+    level = newLevel;
+    const gifPath = colors[newLevel][0];   // same array you already use
+    try {
+        await switchSkin(gifPath);        // pauses until the first frame arrives
+        // At this point `activeGif.image` is ready and the render loop will draw it
+    } catch (_) {
+        // optional: fall back to a default sprite
+    }
+}
+
 // function spawnImg() {
 //     const img = incoming[Math.floor(Math.random() * incoming.length)];
 //     const scale = Math.random() * 1 + 0.5;
@@ -94,7 +130,8 @@ const imgs = [];
 function startAnimation() {
     const canvas = document.getElementById('waveCanvas');
     const ctx    = canvas.getContext('2d');
-    myGif.load(colors[level][0]);           // <-- adjust path if needed
+
+    activeGif.load(colors[level][0]);           // <-- adjust path if needed
 
     canvas.style.backgroundColor = colors[level][1] + "22";
     console.log('🛠️  animation created');
@@ -135,9 +172,8 @@ function startAnimation() {
     // The animation loop
     // -------------------------------------------------
     function render() {
-        console.log('🔁 render tick – myGif.image?', !!myGif.image);
         // ---- 0️⃣ Guard – make sure the GIF frame exists ----------
-        if (!myGif.image) {
+        if (!activeGif.image) {
 
             // GIF not ready yet – skip this frame but keep the loop alive
             requestAnimationFrame(render);
@@ -181,11 +217,11 @@ function startAnimation() {
         );
         ctx.rotate(ang);
         ctx.drawImage(
-            myGif.image,
-            -(myGif.width * GIF_SCALE) / 2,
-                      -(myGif.height * GIF_SCALE),
-                      myGif.width * GIF_SCALE,
-                      myGif.height * GIF_SCALE
+            activeGif.image,
+            -(activeGif.width * GIF_SCALE) / 2,
+                      -(activeGif.height * GIF_SCALE),
+                      activeGif.width * GIF_SCALE,
+                      activeGif.height * GIF_SCALE
         );
         ctx.restore();
 
