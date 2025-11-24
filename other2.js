@@ -29,6 +29,53 @@ const objects = {
 
 let obstacles = [];
 
+
+const LEVEL_TABLE = [
+    // level 0
+    [{ obj: objects.coin,     weight: 1 },
+{ obj: null,             weight: 1 },   // “do nothing”
+{ obj: objects.spike,   weight: 1 }],
+
+// level 1
+[{ obj: objects.coin,     weight: 1 },
+{ obj: null,            weight: 2 },
+{ obj: objects.spike,    weight: 1 },
+{ obj: objects.slowdown, weight: 1 }],
+
+// level 2
+[{ obj: objects.coin,     weight: 1 },
+{ obj: null,             weight: 2 },
+{ obj: objects.spike,  weight: 2 },
+{ obj: objects.slowdown, weight: 1 },
+{ obj: objects.speedup,  weight: 1 }],
+
+// level 3
+[{ obj: objects.coin,   weight: 2 },
+{ obj: null,             weight: 2 },
+{ obj: objects.spike,    weight: 2 },
+{ obj: objects.slowdown, weight: 1 },
+{ obj: objects.speedup,  weight: 1 },
+{ obj: objects.checkpoint, weight: 1 }],
+
+// level 4
+[{ obj: objects.coin,      weight: 2 },
+{ obj: null,             weight: 2 },
+{ obj: objects.spike,    weight: 2 },
+{ obj: objects.slowdown, weight: 1 },
+{ obj: objects.speedup,  weight: 2 },
+{ obj: objects.checkpoint, weight: 1 },
+{ obj: objects.tempPause,  weight: 1 }],
+
+// level 5
+[{ obj: objects.coin,      weight: 1 },
+{ obj: null,          weight: 2 },
+{ obj: objects.spike,    weight: 3 },
+{ obj: objects.slowdown, weight: 2 },
+{ obj: objects.speedup,  weight: 2 },
+{ obj: objects.checkpoint, weight: 1 },
+{ obj: objects.tempPause, weight: 1 }]
+];
+
 /* --------------------------------------------------------
  2 ️*⃣ Utility helpers
  -------------------------------------------------------------- */
@@ -163,6 +210,7 @@ class WaveEngine {
 class Obstacle {
     constructor(imgUrl, x) {
         this.url = imgUrl;           // path to the PNG/GIF
+        this.type = Object.keys(objects).find(k => objects[k] === imgUrl);
         this.x = x;                  // start X (off‑screen right)
         this.loaded = false;         // flag once the image is ready
         this.img = new Image();
@@ -182,7 +230,7 @@ class Obstacle {
     }
 
     /** Render if the image is ready */
-    draw(ctx, wave, dudeX, jumpHeight) {
+    draw(ctx, wave, dudeX) {
         if (!this.loaded) return;
 
         // Compute Y exactly like the surfer does (wave height at this X)
@@ -195,7 +243,7 @@ class Obstacle {
         const angle = Math.atan2(ny - y, 1);
 
         ctx.save();
-        ctx.translate(this.x, y - jumpHeight);
+        ctx.translate(this.x, y +7);
         ctx.rotate(angle);
         ctx.drawImage(
             this.img,
@@ -208,12 +256,12 @@ class Obstacle {
     }
 
     /** Bounding box for collision detection */
-    getBox(wave, jumpHeight) {
+    getBox(wave) {
         const y = wave.canvasHeight / 2 +
         wave.amp * Math.sin(wave.freq * this.x + wave.phase);
         return {
             x: this.x - this.w / 2,
-            y: y - this.h - jumpHeight,
+            y: y - this.h,
             w: this.w,
             h: this.h
         };
@@ -228,14 +276,16 @@ class GameState {
         this.coins = 0;
         this.level = 0;
         this.playing = true;
+        this.jumpMaxHeight = 60;
         this.jumpHeight = 0;   // pixel offset while jumping
+        this.jumped = false;
         this.speed = 1;
         this.lastCheckpoint = {
             amp:0,
             speed:0.01,
             phase:0,
             freq:0
-        }
+        };
     }
 
     collectCoin() {
@@ -280,7 +330,10 @@ class GameState {
 
     /** Called when the player presses a jump key */
     triggerJump() {
-        if (this.jumpHeight <= 3) this.jumpHeight = 60;
+//         if (jumped){
+//
+//         }
+        if (this.jumpHeight <= 3 /*&& jumped*/) this.jumpHeight = 60;
     }
 
     /** Decay the jump height each frame */
@@ -313,270 +366,25 @@ class GameState {
         );
         ctx.restore();
     }
-    addObstacle(renderer){
-        if (obstacles.length < 2){
-        switch(this.level){
-            case 0:
-                switch(Math.floor(Math.random() * 3)){
-                    case 0:
-                        obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                        obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                }
-                break;
-            case 1:
-                switch(Math.floor(Math.random() * 5)){
-                    case 0:
-                        obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                        break;
-                    case 1:
-                    case 2:
-                        break;
-                    case 3:
-                        obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                        break;
-                    case 4:
-                        obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                        break;
-                }
-                break;
-            case 2:
-                switch(Math.floor(Math.random() * 7)){
-                    case 0:
-                        obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                        break;
-                    case 1:
-                    case 2:
-                        break;
-                    case 3:
-                    case 4:
-                        obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                        break;
-                    case 5:
-                        obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                        break;
-                    case 6:
-                        obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                        break;
-                }
-                break;
-            case 3:
-                switch(Math.floor(Math.random() * 9)){
-                    case 0:
-                    case 1:
-                        obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                        break;
-                    case 2:
-                    case 3:
-                        break;
-                    case 4:
-                    case 5:
-                        obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                        break;
-                    case 6:
-                        obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                        break;
-                    case 7:
-                        obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                        break;
-                    case 8:
-                        obstacles.push(new Obstacle(objects.checkpoint, renderer.canvas.width + 50));
-                        break;
-                }
-                break;
-            case 4:
-                switch(Math.floor(Math.random() * 11)){
-                    case 0:
-                    case 1:
-                        obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                        break;
-                    case 2:
-                    case 3:
-                        break;
-                    case 4:
-                    case 5:
-                        obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                        break;
-                    case 6:
-                        obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                        break;
-                    case 7:
-                    case 8:
-                        obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                        break;
-                    case 9:
-                        obstacles.push(new Obstacle(objects.checkpoint, renderer.canvas.width + 50));
-                        break;
-                    case 10:
-                        obstacles.push(new Obstacle(objects.tempPause, renderer.canvas.width + 50));
-                        break;
-                }
-                break;
-            case 5:
-                switch(Math.floor(Math.random() * 11)){
-                    case 0:
-                        obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                        break;
-                    case 2:
-                    case 3:
-                        break;
-                    case 4:
-                    case 5:
-                    case 6:
-                        obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                        break;
-                    case 7:
-                    case 8:
-                        obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                        break;
-                    case 9:
-                    case 10:
-                        obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                        break;
-                    case 11:
-                        obstacles.push(new Obstacle(objects.checkpoint, renderer.canvas.width + 50));
-                        break;
-                    case 12:
-                        obstacles.push(new Obstacle(objects.tempPause, renderer.canvas.width + 50));
-                        break;
-                }
-                break;
+    // Helper: pick a random entry from an array of {obj, weight}
+    weightedPick(choices) {
+        const total = choices.reduce((s, c) => s + c.weight, 0);
+        let r = Math.random() * total;
+        for (const c of choices) {
+            if ((r -= c.weight) < 0) return c.obj;
         }
-        switch(this.level){
-            case 0:
-                switch(Math.floor(Math.random() * 3)){
-                    case 0:
-                        obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                        obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                }
-                break;
-                case 1:
-                    switch(Math.floor(Math.random() * 5)){
-                        case 0:
-                            obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                            break;
-                        case 1:
-                        case 2:
-                            break;
-                        case 3:
-                            obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                            break;
-                        case 4:
-                            obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                            break;
-                    }
-                    break;
-                case 2:
-                    switch(Math.floor(Math.random() * 7)){
-                        case 0:
-                            obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                            break;
-                        case 1:
-                        case 2:
-                            break;
-                        case 3:
-                        case 4:
-                            obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                            break;
-                        case 5:
-                            obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                            break;
-                        case 6:
-                            obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                            break;
-                    }
-                    break;
-                case 3:
-                    switch(Math.floor(Math.random() * 9)){
-                        case 0:
-                        case 1:
-                            obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                            break;
-                        case 2:
-                        case 3:
-                            break;
-                        case 4:
-                        case 5:
-                            obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                            break;
-                        case 6:
-                            obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                            break;
-                        case 7:
-                            obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                            break;
-                        case 8:
-                            obstacles.push(new Obstacle(objects.checkpoint, renderer.canvas.width + 50));
-                            break;
-                    }
-                    break;
-                case 4:
-                    switch(Math.floor(Math.random() * 11)){
-                        case 0:
-                        case 1:
-                            obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                            break;
-                        case 2:
-                        case 3:
-                            break;
-                        case 4:
-                        case 5:
-                            obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                            break;
-                        case 6:
-                            obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                            break;
-                        case 7:
-                        case 8:
-                            obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                            break;
-                        case 9:
-                            obstacles.push(new Obstacle(objects.checkpoint, renderer.canvas.width + 50));
-                            break;
-                        case 10:
-                            obstacles.push(new Obstacle(objects.tempPause, renderer.canvas.width + 50));
-                            break;
-                    }
-                    break;
-                case 5:
-                    switch(Math.floor(Math.random() * 11)){
-                        case 0:
-                            obstacles.push(new Obstacle(objects.coin, renderer.canvas.width + 50));
-                            break;
-                        case 2:
-                        case 3:
-                            break;
-                        case 4:
-                        case 5:
-                        case 6:
-                            obstacles.push(new Obstacle(objects.spike, renderer.canvas.width + 50));
-                            break;
-                        case 7:
-                        case 8:
-                            obstacles.push(new Obstacle(objects.slowdown, renderer.canvas.width + 50));
-                            break;
-                        case 9:
-                        case 10:
-                            obstacles.push(new Obstacle(objects.speedup, renderer.canvas.width + 50));
-                            break;
-                        case 11:
-                            obstacles.push(new Obstacle(objects.checkpoint, renderer.canvas.width + 50));
-                            break;
-                        case 12:
-                            obstacles.push(new Obstacle(objects.tempPause, renderer.canvas.width + 50));
-                            break;
-                    }
-                    break;
-        }
-        }else{
-        }
+    }
+    addObstacle(renderer) {
+        // Only add when we have room for another obstacle
+        if (obstacles.length >= 1) return;
+
+        const choices = LEVEL_TABLE[this.level] || [];
+        const picked = this.weightedPick(choices);
+
+        // If the choice is null we intentionally skip adding anything
+        if (!picked) return;
+
+        obstacles.push(new Obstacle(picked, renderer.canvas.width + 50));
     }
     rectOverlap(a, b) {
         return a.x < b.x + b.w &&
@@ -592,7 +400,7 @@ class GameState {
         const surferBottomY =
         canvas.height / 2 +
         wave.amp * Math.sin(wave.freq * dudeX + wave.phase) -
-        state.jumpHeight;
+        this.jumpHeight;
 
         const surferBox = {
             x: dudeX - (sprite.width * GIF_SCALE) / 2,
@@ -602,7 +410,12 @@ class GameState {
         };
 
         // Test each obstacle’s box
-        return obstacles.some(obs => this.rectOverlap(surferBox, obs.getBox(wave, state.jumpHeight)));
+        for (const obs of obstacles) {
+            if (this.rectOverlap(surferBox, obs.getBox(wave, this.jumpHeight))) {
+                return obs;               // <-- return the colliding obstacle
+            }
+        }
+        return null;
     }
 }
 
@@ -652,7 +465,6 @@ class Renderer {
     drawSurfer() {
         const { ctx, canvas, wave, state, dudeX, GIF_SCALE } = this;
         const sprite = this.gifMgr.sprite;
-        console.log('Sprite at draw:', sprite);
         if (!sprite?.image) return; // safety – should never happen
 
         const y  = canvas.height / 2 + wave.amp * Math.sin(wave.freq * dudeX + wave.phase);
@@ -709,6 +521,7 @@ class InputHandler {
 
             // Jump keys
             if (['KeyW', 'Space', 'ArrowUp'].includes(code)) {
+                //game.jumped = true;
                 this.state.triggerJump();
                 return;
             }
@@ -770,10 +583,10 @@ class InputHandler {
             .then(() => renderer.updateBackground())
             .catch(console.error);
         }
-        obstacles = [];
-        game.addObstacle && game.addObstacle(renderer);
     }, 250);
-
+    setInterval(()=>{
+        game.addObstacle && game.addObstacle(renderer);
+    }, wave.spd * 100000);
     // ------------------------------------------------------------------
     // Main animation loop (requestAnimationFrame)
     // ------------------------------------------------------------------
@@ -791,11 +604,42 @@ class InputHandler {
             // Remove once completely off‑screen left
             if (obs.x + obs.w < 0) obstacles.splice(idx, 1);
         });
-        for(i in game.checkCollision(renderer, wave, canvas)) {
-            console.log(i);
-            game.finishGame("dead");
-            return;               // stop the loop for this frame
-        }
+            const hit = game.checkCollision(renderer, wave, game);
+            if (hit) {
+                // ----------  HANDLE EACH TYPE -------------
+                switch (hit.type) {
+                    case 'spike':
+                        console.log('💥 Spike!');          // death
+                        game.finishGame('dead');
+                        return;                            // stop the loop
+                    case 'coin':
+                        console.log('🪙 Coin collected');
+                        game.collectCoin();                // already increments & levels
+                        break;
+                    case 'slowdown':
+                        console.log('🐢 Slowdown');
+                        game.slowdown();
+                        break;
+                    case 'speedup':
+                        console.log('⚡ Speed‑up');
+                        game.speedup();
+                        break;
+                    case 'tempPause':
+                        console.log('⏸️ Temporary pause');
+                        game.togglePause();                // or a custom pause timer
+                        break;
+                    case 'checkpoint':
+                        console.log('🏁 Checkpoint saved');
+                        // Save the current wave parameters so you can restore later
+                        game.saveCheckpoint(wave.amp, game.speed, wave.phase, wave.freq);
+                        break;
+                    default:
+                        console.warn('Unknown obstacle type:', hit.type);
+                }
+                // After handling, optionally remove the obstacle so it isn’t hit again
+                const idx = obstacles.indexOf(hit);
+                if (idx !== -1) obstacles.splice(idx, 1);
+            }
         renderer.render();        // draw everything
         requestAnimationFrame(tick);
     }
