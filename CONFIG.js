@@ -35,9 +35,9 @@ const OBJECTS = {
 const LEVEL_TABLE = [
     // level 0
     [
-        { obj: OBJECTS.life,      weight: 1 },
+        { obj: OBJECTS.coin,      weight: 1 },
 { obj: null,              weight: 1 },   // “do nothing”
-{ obj: OBJECTS.tempPause,     weight: 1 }
+{ obj: OBJECTS.spike,     weight: 1 }
     ],
 
 // level 1

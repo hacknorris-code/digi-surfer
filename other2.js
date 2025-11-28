@@ -210,6 +210,8 @@ class GameState {
         this.jumpHeight = 0;   // pixel offset while jumping
         this.jumped = false;
         this.speed = 1;
+        this._morphTimer    = null;
+        this._obstacleTimer = null;
         this.lastCheckpoint = {
             amp:0,
             speed:0.01,
@@ -512,7 +514,7 @@ class InputHandler {
 
             // Pause / resume – CapsLock (fixed!)
             if (code === 'CapsLock') {
-                this.state.togglePause();
+                this.state.togglePause(this.gifMgr,this.wave,this.renderer);
                 return;
             }
         });
@@ -524,10 +526,10 @@ class InputHandler {
     }
 }
 
-GameState.prototype.togglePause = function () {
-    this.playing = !this.playing;
-    if (this.playing) startTimers(); else stopTimers();
-};
+// GameState.prototype.togglePause = function () {
+//     this.playing = !this.playing;
+//     if (this.playing) startTimers(); else stopTimers();
+// };
 
 /* --------------------------------------------------------------
  8 ️*⃣ Bootstrap – glue everything together
@@ -548,7 +550,7 @@ GameState.prototype.togglePause = function () {
     wave.canvasHeight = canvas.height;
     const game     = new GameState();
     const renderer = new Renderer(canvas, gifMgr, wave, game);
-    const input    = new InputHandler(game);
+       const input    = new InputHandler(game, gifMgr, wave, renderer);
     const fpsMeter = utils.createFPSMeter(fpsEl);
     let morphTimer   = null;
     let obstacleTimer = null;
@@ -631,8 +633,8 @@ GameState.prototype.togglePause = function () {
                         break;
                     case 'tempPause':
                         console.log('⏸️ Temporary pause');
-                        game.togglePause();                // or a custom pause timer
-                        setTimeout(()=>{game.togglePause()},1000);
+                        //game.togglePause();                // or a custom pause timer
+                        game.temporaryPause(5000, gifMgr, wave, renderer);
                         break;
                     case 'life':
                         game.lifes++;
